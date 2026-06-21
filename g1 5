@@ -1,1 +1,102 @@
+11111
+!pip install gensim
+import numpy as np
+from gensim.downloader import load
+
+model = load("fasttext-wiki-news-subwords-300")
+
+print("King Similar Words:")
+print(model.most_similar("king", topn=5))
+
+print("\nKing - Man + Woman:")
+print(model.most_similar(positive=["king", "woman"], negative=["man"], topn=1))
+
+print("\nParis - France + Italy:")
+print(model.most_similar(positive=["paris", "italy"], negative=["france"], topn=1))
+
+sim = np.dot(model["king"], model["queen"]) / (
+    np.linalg.norm(model["king"]) * np.linalg.norm(model["queen"])
+)
+print("\nKing-Queen Similarity:", sim)
+print("\nUncle - Man + Woman:")
+print(model.most_similar(positive=["uncle", "woman"], negative=["man"], topn=1))
+print("\nGood:", [w for w, _ in model.most_similar("good", topn=5)])
+print("Bad :", [w for w, _ in model.most_similar("bad", topn=5)])
+
+22222222222
+
+
+# pip install gensim matplotlib scikit-learn
+
+import gensim.downloader as api
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+
+
+model = api.load("word2vec-google-news-300")
+
+
+words = ['computer', 'internet', 'software', 'hardware', 'keyboard', 'mouse', 'server', 'network', 'programming', 'database']
+vectors = [model[word] for word in words]
+
+
+pca = PCA(n_components=2)
+reduced = pca.fit_transform(vectors)
+
+
+input_word = 'computer'
+similar_words = model.most_similar(input_word, topn=5)
+
+
+print(f"Top 5 words similar to '{input_word}':")
+for word, score in similar_words:
+    print(f"{word}: {score:.4f}")
+
+
+plt.figure(figsize=(8, 6))
+for i, word in enumerate(words):
+    plt.scatter(reduced[i, 0], reduced[i, 1])
+    plt.annotate(word, (reduced[i, 0], reduced[i, 1]))
+plt.title("PCA Visualization of Technology Word Embeddings")
+plt.xlabel("PC1")
+plt.ylabel("PC2")
+plt.grid(True)
+
+
+plt.show()
+
+
+333333333
+
+!pip install gensim
+import matplotlib.pyplot as plt, numpy as np
+from sklearn.manifold import TSNE
+from gensim.models import Word2Vec
+
+corpus = [s.lower().split() for s in [
+"The patient was diagnosed with diabetes and hypertension.",
+"MRI scans reveal abnormalities in the brain tissue.",
+"The treatment involves antibiotics and regular monitoring.",
+"Symptoms include fever fatigue and muscle pain.",
+"The vaccine is effective against several viral infections.",
+"Doctors recommend physical therapy for recovery.",
+"The clinical trial results were published in the journal.",
+"The surgeon performed a minimally invasive procedure.",
+"The prescription includes pain relievers and anti inflammatory drugs.",
+"The diagnosis confirmed a rare genetic disorder."
+]]
+
+model = Word2Vec(corpus, vector_size=100, min_count=1, epochs=50)
+words = model.wv.index_to_key
+X = TSNE(n_components=2, perplexity=5, random_state=42).fit_transform(np.array([model.wv[w] for w in words]))
+
+plt.scatter(X[:,0], X[:,1])
+for i,w in enumerate(words): plt.text(X[i,0], X[i,1], w)
+plt.show()
+for w in ["treatment","vaccine"]:
+    print(w, "->", model.wv.most_similar(w, topn=5))
+
+
+444444444444
+
 
