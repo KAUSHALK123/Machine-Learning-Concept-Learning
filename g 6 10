@@ -1,4 +1,4 @@
-66666666666
+66666666666/////////////////////////////////////////////////
 
 !pip install transformers torch
 
@@ -20,7 +20,7 @@ for sentence, result in zip(input_sentences, results):
     print(f"Input Sentence: {sentence}")
     print(f"Predicted Sentiment: {result['label']}, Confidence Score: {result['score']:.2f}\n")
 
-777777777
+777777777//////////////////////////////////////////////
 
 from transformers import T5ForConditionalGeneration, T5Tokenizer
 tokenizer = T5Tokenizer.from_pretrained("t5-small")
@@ -36,3 +36,48 @@ summary_ids = model.generate(input_ids, max_length=60, min_length=30, do_sample=
 summary_text = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
 print("Generated Summary:")
 print(summary_text)
+
+88888888888888888888888888888888////////////////////////////////////////////
+
+import gdown
+from langchain_cohere import ChatCohere
+from langchain_core.prompts import PromptTemplate
+
+
+file_id = "1xnfosewraVuKewjjWXeBiNAUPj2ou7Zr"
+url = f"https://drive.google.com/file/d/1AuFPDqqNQWPTVQdEIDzQBq1elzJFDE4Q/view?usp=sharing"
+gdown.download(url, "sample.txt", quiet=False)
+
+
+with open("sample.txt", "r", encoding="utf-8") as f:
+    text = f.read()
+
+
+llm = ChatCohere(
+    cohere_api_key="4PrkROv1uezkNOWUOG9V3ew5PnXxnXhewshqJQx",
+    model="command-a-plus-05-2026"
+)
+
+
+prompt = PromptTemplate(
+    input_variables=["text"],
+    template="""
+{text}
+
+Give the output in exactly this format:
+
+Generated Summary:
+<brief summary in 3-4 lines>
+"""
+)
+
+response = llm.invoke(prompt.format(text=text))
+for item in response.content:
+    if item["type"] == "text":
+        summary = item["text"]
+        break
+print("\nGenerated Output:\n")
+print(summary)
+
+
+9999999999999999999999///////////////////////////
