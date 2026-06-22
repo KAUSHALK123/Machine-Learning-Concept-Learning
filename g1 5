@@ -100,41 +100,23 @@ for w in ["treatment","vaccine"]:
 444444444444////////////////////////////////////////////////////////////////////////////////////////
 
 # 4
-!pip install langchain_cohere
-import os, re
-from sentence_transformers import SentenceTransformer, util
+!pip install -U langchain-core langchain-cohere
+import os,re
 from langchain_cohere import ChatCohere
 from google.colab import userdata
 
-os.environ["COHERE_API_KEY"] = userdata.get('COHERE_API_KEY') 
-model = SentenceTransformer("all-MiniLM-L6-v2")
-llm = ChatCohere(model="command-a-03-2025", temperature=0.3)
-orig = input("Enter your prompt: ")
-words = list(dict.fromkeys(re.findall(r"\b[a-zA-Z]{4,}\b", orig.lower())))
+os.environ["COHERE_API_KEY"] = "4PrkROv1uezkNOWUOG9V3ew5PnXxnXhewshqJQx8"
 
-if words:
-    embs = model.encode(words, convert_to_tensor=True)
-    sims = util.cos_sim(embs, embs)
-    k = min(3, len(words))
+llm=ChatCohere(model="command-a-03-2025",temperature=0.3)
 
-    enriched_words = list({words[int(idx)] for row in sims for idx in row.topk(k=k).indices})
-else:
-    enriched_words = []
+p=input("Enter your prompt: ")
+rel=list(dict.fromkeys(re.findall(r"\b[a-zA-Z]{4,}\b",p.lower())))[:5]
 
-enriched_prompt = f"""
-Original Prompt:
-{orig}
+ep=f"{p}\n\nRelated concepts: {', '.join(rel)}\n\nProvide a detailed answer."
 
-Related concepts (auto-generated using embeddings):
-{", ".join(enriched_words)}
-
-Now provide a detailed and context-rich answer.
-""" if words else orig
-
-print("\n========== RELATED WORDS\n", enriched_words)
-print("\n=========== ORIGINAL RESPONSE \n", llm.invoke(orig).content)
-print("\n========== ENRICHED RESPONSE \n", llm.invoke(enriched_prompt).content)
-print("\n=========== RESULT\nEnriched response is usually more detailed and context-aware.")
+print("\nRELATED WORDS:",rel)
+print("\nORIGINAL RESPONSE\n",llm.invoke(p).content)
+print("\nENRICHED RESPONSE\n",llm.invoke(ep).content)
 
 555555555555555555////////////////////////////////////
 
