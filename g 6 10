@@ -81,3 +81,144 @@ print(summary)
 
 
 9999999999999999999999///////////////////////////
+
+!pip install wikipedia-api
+
+import os, re, requests, wikipediaapi # 9
+from bs4 import BeautifulSoup
+from pydantic import BaseModel
+
+class InstitutionProfile(BaseModel):
+    founder: str = "Unknown"
+    Established: int = 0
+    branches: list[str] = ["Unknown"]
+    employee_count: int = 0
+    summary: str
+
+def get_data(name: str) -> InstitutionProfile:
+    agent = "MyInstitutionInfoBot/1.0 (contact: your-email@example.com)"
+    wiki = wikipediaapi.Wikipedia(user_agent=agent, language="en").page(name)
+    if not wiki.exists(): raise ValueError(f"Wikipedia page for '{name}' not found.")
+
+    res = requests.get(f"https://en.wikipedia.org/wiki/{name.replace(' ', '_')}", headers={"User-Agent": agent})
+    soup = BeautifulSoup(res.text, "html.parser")
+    box = soup.find("table", {"class": "infobox"})
+
+    d = {"founder": "Unknown", "Established": 0, "branches": ["Unknown"], "employee_count": 0, "summary": wiki.summary[:300]}
+
+    if box:
+        for r in box.find_all("tr"):
+            th, td = r.find("th"), r.find("td")
+            if th and td:
+                k, v = th.text.strip(), td.text.strip()
+                if k in ["Founder", "Founders", "Founder(s)"]: d["founder"] = v
+                elif k in ["Established", "Founded", "Formation"]:
+                    m = re.search(r"\b(18\d{2}|19\d{2}|20\d{2})\b", v)
+                    if m: d["Established"] = int(m.group(0))
+                elif k in ["Total staff", "Employees", "Staff"]:
+                    m = re.search(r"(\d{3,5})", v)
+                    if m: d["employee_count"] = int(m.group(0))
+                elif k in ["Address", "Location"]: d["branches"] = [v.split(",")[0]]
+
+    if d["founder"] == "Unknown":
+        db_res = requests.get(f"https://dbpedia.org/data/{name.replace(' ', '_')}.json", headers={"User-Agent": "MyInstitutionInfoBot/1.0"})
+        if db_res.status_code == 200:
+            ent = db_res.json().get(f"http://dbpedia.org/resource/{name.replace(' ', '_')}", {})
+            if "http://dbpedia.org/ontology/foundedBy" in ent:
+                d["founder"] = ent["http://dbpedia.org/ontology/foundedBy"][0]["value"]
+
+    return InstitutionProfile(**d)
+
+if __name__ == "__main__":
+    try:
+        print(get_data(input("Enter institution name: ")).model_dump_json(indent=2))
+    except ValueError as e:
+        print(e)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1001010101010101////////////////////////////
+
+import PyPDF2
+import numpy as np
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+import google.generativeai as genai
+
+# Gemini API Key
+genai.configure(api_key="IzaSyD2ebtmyhpX5B6Z9vDKgKoiNoZiCSotHuE")
+
+model = genai.GenerativeModel("gemini-2.5-flash")
+
+# Read PDF
+text = "".join(
+    page.extract_text() or ""
+    for page in PyPDF2.PdfReader(open("IPC_Chatbot_Test_Document.pdf", "rb")).pages
+)
+
+# Split into chunks
+chunks = text.split(". ")
+
+# Create embeddings
+embed_model = SentenceTransformer("all-MiniLM-L6-v2")
+embeddings = embed_model.encode(chunks)
+
+print("\nIPC Chatbot: Ask me about IPC. Type 'exit' to quit.\n")
+
+while True:
+
+    question = input("You: ")
+
+    if question.lower() == "exit":
+        break
+
+    # Find best matching chunk
+    question_embedding = embed_model.encode([question])
+
+    best_index = np.argmax(
+        cosine_similarity(question_embedding, embeddings)
+    )
+
+    context = chunks[best_index]
+
+    # Generate detailed answer
+    prompt = f"""
+    You are an expert Indian Penal Code assistant.
+
+    Context from IPC PDF:
+    {context}
+
+    User Question:
+    {question}
+
+    Give a detailed answer in simple English.
+
+    Include:
+    1. Introduction
+    2. Explanation
+    3. Important points
+    4. Example
+    5. Punishment (if applicable)
+
+    Make the answer at least 200-300 words.
+    """
+
+    response = model.generate_content(prompt)
+
+    print("\nIPC Bot:\n")
+    print(response.text)
+    print("\n" + "="*80 + "\n")
+
+print("Exiting chatbot...")
